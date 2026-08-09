@@ -67,11 +67,12 @@ def render_step(console, prefix: str, text: str, style: str):
 def main():
     cfg = Config()
 
+    llm = create_llm_client(cfg)
+
     tools = ToolRegistry()
-    for t in builtin_tools():
+    for t in builtin_tools(cfg=cfg, llm=llm):
         tools.register(t)
 
-    llm = create_llm_client(cfg)
     parser = ReActParser()
     context_mgr = ContextManager(load_system_template())
     harness = ToolHarness(HarnessConfig(

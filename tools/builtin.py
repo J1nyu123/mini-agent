@@ -1,8 +1,12 @@
-"""内置工具：calculator（新）/ search_web（复用 final mock）/ get_time（复用 final get_time）。"""
+"""内置工具：calculator（新）/ search_web（Tavily → LLM → Mock）/ get_time。"""
+import logging
 import math as _math
 import time as _time
+from typing import Any, Callable, Dict, Optional
 
 from tools.base import Tool
+
+logger = logging.getLogger(__name__)
 
 _SAFE_MATH_FUNCTIONS: dict = {
     "abs": abs, "round": round, "min": min, "max": max,
@@ -57,7 +61,45 @@ def _get_time_handler(params: dict) -> str:
     return _time.strftime("%Y-%m-%d %H:%M:%S", _time.localtime())
 
 
-def builtin_tools() -> list:
+def search_web_factory(cfg=None, llm=None) -> Callable[[dict], str]:
+    """构造 search_web 工具的执行函数，三级降级：
+      1) 已配置 search_api_key → Tavily 真实搜索
+      2) Tavily 失败但 llm 可用 → LLM 知识库回答
+      3) 否则 → mock 搜索结果
+    """
+    from .tavily import tavily_search  # 延迟导入避免循环
+
+    def _execute(params: dict) -> str:
+        query = params.get("query", "") if isinstance(params, dict) else ""
+        if not query:
+            return "请提供搜索关键词"
+
+        api_key = getattr(cfg, "search_api_key", "") if cfg is not None else ""
+        api_url = getattr(cfg, "search_api_url", "") if cfg is not None else ""
+
+        if api_key:
+            try:
+                return tavily_search(query, api_key, api_url)
+            except Exception as e:
+                logger.warning("Tavily 搜索失败，降级: %s", e)
+
+        if llm is not None:
+            try:
+                from protocol.message import Message  # 延迟导入
+
+                resp = llm.chat(
+                    [Message(role="user", content=f"请用简洁中文回答：{query}")])
+                if resp:
+                    return resp
+            except Exception as e:
+                logger.warning("LLM 降级搜索失败: %s", e)
+
+        return _mock_search_handler(params)
+
+    return _execute
+
+
+def builtin_tools(cfg=None, llm=None) -> list:
     return [
         Tool(
             name="calculator",
@@ -87,7 +129,7 @@ def builtin_tools() -> list:
                 },
                 "required": ["query"],
             },
-            handler=_mock_search_handler,
+            handler=search_web_factory(cfg, llm),
         ),
         Tool(
             name="get_time",
