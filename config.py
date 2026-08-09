@@ -1,4 +1,3 @@
-"""配置加载——简化自 final/config/config.py，仅保留 LLM + Memory + Harness 配置"""
 import os
 from dataclasses import dataclass, field
 
