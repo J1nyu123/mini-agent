@@ -132,6 +132,18 @@ class SQLiteStorage:
         except Exception as e:
             logger.debug("保存工具调用日志失败: %s", e)
 
+    def delete_session(self, name: str) -> bool:
+        """Delete a session and its messages/logs (cascade). Returns True if deleted."""
+        if not self._conn:
+            return False
+        try:
+            cur = self._conn.execute("DELETE FROM sessions WHERE name = ?", (name,))
+            self._conn.commit()
+            return cur.rowcount > 0
+        except Exception as e:
+            logger.debug("删除会话失败: %s", e)
+            return False
+
     def list_sessions(self) -> List[dict]:
         if not self._conn:
             return []

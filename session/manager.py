@@ -45,6 +45,15 @@ class SessionManager:
     def current_name(self) -> str:
         return self._current_name
 
+    def delete(self, name: str) -> bool:
+        if name == self._current_name:
+            return False
+        if name not in self._states:
+            return bool(self._storage.delete_session(name))
+        self._states.pop(name, None)
+        self._memories.pop(name, None)
+        return self._storage.delete_session(name)
+
     def list_names(self) -> List[dict]:
         return self._storage.list_sessions()
 

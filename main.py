@@ -53,6 +53,7 @@ def print_banner(console):
 def print_help(console):
     console.print("[bold]可用命令：[/bold]")
     console.print("  [bold]/switch[/bold] <名称>   - 切换会话")
+    console.print("  [bold]/delete[/bold] <名称>   - 删除会话")
     console.print("  [bold]/sessions[/bold]        - 列出所有会话")
     console.print("  [bold]/clear[/bold]           - 清除当前会话历史")
     console.print("  [bold]/help[/bold]            - 显示帮助")
@@ -119,6 +120,15 @@ def main():
                 if name:
                     sessions.switch(name)
                     console.print(f"[bold]已切换到「{name}」[/bold]")
+                continue
+            elif user_input.startswith("/delete "):
+                name = user_input[len("/delete "):].strip()
+                if not name:
+                    console.print("[dim]用法: /delete <名称>[/dim]")
+                elif sessions.delete(name):
+                    console.print(f"[dim]会话「{name}」已删除[/dim]")
+                else:
+                    console.print(f"[red]无法删除「{name}」（当前会话或不存在）[/red]")
                 continue
             elif user_input == "/clear":
                 _, mem = sessions.current()
