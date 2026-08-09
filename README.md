@@ -23,7 +23,7 @@ python main.py
 
 ## 演示
 
-<video src="test.mp4" controls width="100%"></video>
+[<video src="test.mp4" controls width="100%"></video>](https://github.com/user-attachments/assets/fbfbf2f9-192e-41b7-bb4d-a6761433c524)
 
 ## 配置 LLM API
 
