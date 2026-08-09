@@ -19,6 +19,7 @@ class Agent:
         context: ContextManager,
         harness: ToolHarness,
         executor: Executor,
+        compress_threshold: int = 20,
     ):
         self._llm = llm
         self._parser = parser
@@ -26,11 +27,13 @@ class Agent:
         self._context = context
         self._harness = harness
         self._executor = executor
+        self._compress_threshold = compress_threshold
 
     def run(self, user_input: str, state: AgentState,
             memory: ShortTermMemory) -> str:
         loop = AgentLoop(
             self._llm, self._parser, self._tools,
             self._context, self._harness, self._executor,
+            compress_threshold=self._compress_threshold,
         )
         return loop.run(user_input, state, memory)

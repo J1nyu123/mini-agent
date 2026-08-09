@@ -5,7 +5,7 @@ from datetime import datetime
 
 from protocol.message import Message, Role
 from protocol.action import ActionType, AgentAction
-from memory.short_term import ShortTermMemory
+from memory.short_term import ShortTermMemory, generate_summary
 from runtime.state import AgentState, ToolCallLog
 from runtime.executor import Executor
 from tools.registry import ToolRegistry
@@ -27,6 +27,7 @@ class AgentLoop:
         context: ContextManager,
         harness: ToolHarness,
         executor: Executor,
+        compress_threshold: int = 20,
     ):
         self._llm = llm
         self._parser = parser
@@ -34,6 +35,7 @@ class AgentLoop:
         self._context = context
         self._harness = harness
         self._executor = executor
+        self._compress_threshold = compress_threshold
 
     def run(
         self,
@@ -46,6 +48,18 @@ class AgentLoop:
         state.turn_count = 0
         state.tool_calls = []
         state.last_error = ""
+
+        # 自动压缩：消息数超过阈值时，将旧消息替换为摘要
+        if memory.count() > self._compress_threshold:
+            keep = self._executor.config.max_turns
+            old_msgs = memory.get_all()[: -(keep * 2)]
+            try:
+                summary = generate_summary(self._llm, old_msgs)
+                removed = memory.compress(keep, summary)
+                if removed:
+                    logger.info("自动压缩 %d 条历史消息", removed)
+            except Exception as e:
+                logger.warning("对话压缩失败: %s", e)
 
         while not self._executor.should_stop(state):
             messages = self._context.build(memory, self._tools.list_schemas())

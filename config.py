@@ -20,6 +20,7 @@ class Config:
 
     # Loop
     max_turns: int = 5
+    compress_threshold: int = 20  # 消息数超过此值时自动触发压缩
 
     # Search
     search_api_key: str = "" #填入api_key (可选)

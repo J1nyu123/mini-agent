@@ -12,6 +12,7 @@ from tools.registry import ToolRegistry
 from tools.builtin import builtin_tools
 from context.manager import ContextManager
 from harness.runner import ToolHarness, HarnessConfig
+from memory.short_term import generate_summary
 from memory.storage import SQLiteStorage
 from session.manager import SessionManager
 from protocol.message import Message, Role
@@ -56,6 +57,7 @@ def print_help(console):
     console.print("  [bold]/delete[/bold] <名称>   - 删除会话")
     console.print("  [bold]/sessions[/bold]        - 列出所有会话")
     console.print("  [bold]/clear[/bold]           - 清除当前会话历史")
+    console.print("  [bold]/compress[/bold]        - 压缩对话历史")
     console.print("  [bold]/help[/bold]            - 显示帮助")
     console.print("  [bold]/exit[/bold]            - 退出程序")
 
@@ -83,7 +85,8 @@ def main():
     ))
     executor = Executor(ExecutorConfig(max_turns=cfg.max_turns))
 
-    agent = Agent(llm, parser, tools, context_mgr, harness, executor)
+    agent = Agent(llm, parser, tools, context_mgr, harness, executor,
+                  compress_threshold=cfg.compress_threshold)
     storage = SQLiteStorage(cfg.db_path)
     sessions = SessionManager(storage, max_turns=cfg.short_term_max_turns)
 
@@ -129,6 +132,20 @@ def main():
                     console.print(f"[dim]会话「{name}」已删除[/dim]")
                 else:
                     console.print(f"[red]无法删除「{name}」（当前会话或不存在）[/red]")
+                continue
+            elif user_input == "/compress":
+                _, mem = sessions.current()
+                if mem.count() < 6:
+                    console.print("[dim]消息较少，无需压缩[/dim]")
+                else:
+                    try:
+                        keep = cfg.max_turns
+                        old_msgs = mem.get_all()[: -(keep * 2)]
+                        summary = generate_summary(llm, old_msgs)
+                        removed = mem.compress(keep, summary)
+                        console.print(f"[dim]已压缩 {removed} 条历史消息[/dim]")
+                    except Exception as e:
+                        console.print(f"[red]压缩失败: {e}[/red]")
                 continue
             elif user_input == "/clear":
                 _, mem = sessions.current()
