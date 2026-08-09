@@ -21,6 +21,10 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## 演示
+
+<video src="test.mp4" controls width="100%"></video>
+
 ## 配置 LLM API
 
 设置环境变量接入真实 LLM（兼容 OpenAI 接口标准的任意服务）：
@@ -48,8 +52,10 @@ export MINI_AGENT_SEARCH_API_KEY="tvly-your-key"
 | 命令 | 说明 |
 |------|------|
 | `/switch <名称>` | 创建或切换会话 |
+| `/delete <名称>` | 删除会话 |
 | `/sessions` | 列出所有会话 |
 | `/clear` | 清除当前会话历史 |
+| `/compress` | 压缩对话历史 |
 | `/help` | 显示帮助 |
 | `/exit` | 退出 |
 
